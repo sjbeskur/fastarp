@@ -13,11 +13,14 @@ fn main() {
 
     println!("Fast Arp experiment");
     
-    let args: Vec<String> = std::env::args().collect();
+    let args: Vec<String> = std::env::args().collect();    
     println!("{:?}", args);
     let interface = &args[1];
+    
     let start = PreciseTime::now();
+
     let node_map = lib_arp::scan_v4(interface);
+    
     let end = PreciseTime::now();
     let scan_time = start.to(end).num_milliseconds() as f64;
 

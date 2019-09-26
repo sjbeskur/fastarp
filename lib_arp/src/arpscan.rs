@@ -114,7 +114,6 @@ fn send_arp(iface: NetworkInterface,  source_ip: IpAddr, ip_list: &[Ipv4Addr] ) 
     return timer_map;
 }
 
-
 pub fn get_iface_ips(target_iface: &str) -> Vec<Ipv4Addr>{
     let iface = validate_interface(target_iface.to_string()).unwrap();
     let source_network = iface.ips.iter().find(|x| x.is_ipv4()).unwrap();
@@ -126,66 +125,6 @@ pub fn get_iface_ips(target_iface: &str) -> Vec<Ipv4Addr>{
     }
     ips_v4
 }
-//impl ArpScan{
-
-/*
-    pub fn scan(&self ) -> HashMap<String, ArpNode>{
-        let source_network = self.iface.ips.iter().find(|x| x.is_ipv4()).unwrap();
-        let source_ip      = source_network.ip();
-                    
-        let mut timer_map: HashMap<Ipv4Addr,SystemTime> = HashMap::new();
-
-        match source_network {
-            &IpNetwork::V4(source_networkv4) => {
-                for target_ipv4 in source_networkv4.iter() {
-                    match source_ip {
-                        IpAddr::V4(source_ipv4) => {
-                            let now = SystemTime::now();
-                            timer_map.insert(target_ipv4, now);
-                            super::arpscan::send_arp_packet(self.iface.clone(), source_ipv4, target_ipv4);
-                        },
-                        e => {
-                            error!("Error while parsing to IPv4 address: {}", e);
-                            panic!("Error while parsing to IPv4 address: {}", e)
-                        }
-                    }
-                }
-            },
-            e => {
-                error!("Error while attempting to get network for interface: {}", e);
-                panic!("Error while attempting to get network for interface: {}", e)
-            }
-        }        
-
-        let mut node_map: HashMap<String, ArpNode> = HashMap::new();
-
-        loop {
-            match self.receiver.try_recv() {
-                Ok((ipv4_addr, mac_addr, arrived)) => {
-                    let mut elapsed = 0;                            
-                    if let Some(sent) = timer_map.get(&ipv4_addr){
-                        if arrived > *sent {
-                            elapsed = arrived.duration_since(*sent).unwrap().as_millis();
-                        }else{
-                            debug!("arp response recieved from: {} outside of expected window (non critical)",ipv4_addr);
-                        }
-                    }
-                    let node = ArpNode{
-                        mac_address: mac_addr.to_string(),
-                        ipv4_address: ipv4_addr.to_string(),
-                        ping_ms: elapsed as u64
-                    };
-                    node_map.insert(mac_addr.to_string(), node.clone());
-                },
-                Err(_) => break
-            }
-        }
-
-        node_map        
-    }
-*/
-
-
 
 pub fn listen_for_arp( interface: NetworkInterface ) -> (JoinHandle<()>,  ReceiverChannel) {
 
