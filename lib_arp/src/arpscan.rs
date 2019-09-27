@@ -80,17 +80,16 @@ fn compute_chunk_size(list_size: usize) -> usize{
     if list_size > 65536{
         warn!("this network is to big for nemesis to support and we should Panic");
         return 410;  
-        
     }
 
-    // this is basically the log for computing population doubling time
-    // applied to then scale chunk sizes based on the size of the list
-    // see adm spreadsheet for chunks/ hosts/ threads
+    // This is basically a math trick for computing population doubling time that
+    // I've applied to scale chunk sizes based on the size of the list of nodes.
+    // See adm spreadsheet for chunks/ hosts/ threads
     let hosts = list_size as f32;
-    let two = 2.0_f32;
-    let onedot5 = 1.5_f32;
-    let distance = (hosts.log10() / two.log10() - 8.0) as i32;
-    let rslt = onedot5.powi(distance) * 16.0;
+    let two = 2.0_f32;  // doubling every step
+    let onedot5 = 1.5_f32; // my own scaling factor
+    let distance = (hosts.log10() / two.log10() - 8.0) as i32; // 8 because 256 is the 8th generation
+    let rslt = onedot5.powi(distance) * 16.0;  // 16 is arbitrary coefficiant
         
     return rslt as usize;
 }
