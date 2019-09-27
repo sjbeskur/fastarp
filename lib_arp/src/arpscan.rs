@@ -23,10 +23,11 @@ pub fn scan_v4(iface_name: &str) -> std::collections::HashMap<String, ArpNode>{
     let source_network = iface.ips.iter().find(|x| x.is_ipv4()).unwrap();
     let source_ip      = source_network.ip();
 
-    let (hdl, reciever) = listen_for_arp(iface.clone());
+    let (_hdl, reciever) = listen_for_arp(iface.clone());
 
+    thread::sleep_ms(1000);
     let chunk_size = compute_chunk_size(ips.len());
-    println!("chunk_size = {}", chunk_size);
+    debug!("chunk_size = {}", chunk_size);
     let chunks: Vec<_> = ips.chunks(chunk_size).map(|c| c.to_owned()).collect();
 
     let mut handles = vec![];
@@ -53,21 +54,23 @@ pub fn scan_v4(iface_name: &str) -> std::collections::HashMap<String, ArpNode>{
             Some(t_sent) => { 
                 let arrived = arp.3;
                 match arrived.duration_since(*t_sent){
-                    Ok(time_dif) => { time_dif.as_millis() },
-                    _ => { 0 as u128 }
+                    Ok(time_dif) => { 
+                        time_dif.as_micros() as f32 / 1000.0                         
+                    },
+                    _ => { 0.0 as f32 }
                 }
                 
             },
             _ => { 
-                println!("[not found] {}", arp.0);
-                0 as u128 }
+                    debug!("{} - key not found in timer map", arp.0);
+                    0.0 as f32 
+                }
         };
 
         let n = ArpNode { mac_address: arp.1.to_string(), ipv4_address: arp.0.to_string(), ipv4_target: arp.2.to_string(), ping_ms: t  };
         nodes.insert(n.mac_address.clone(), n);
     }
-  //  hdl.thread().unpark();
- //   readline();
+
     nodes
 }
 
@@ -106,7 +109,7 @@ fn send_arp(iface: NetworkInterface,  source_ip: IpAddr, ip_list: &[Ipv4Addr] ) 
                 };
             },
             _ => {
-                println!("unsupported address type");
+                warn!("unsupported address type");
             }
         }
     }
@@ -130,7 +133,7 @@ pub fn listen_for_arp( interface: NetworkInterface ) -> (JoinHandle<()>,  Receiv
     let (sender, receiver): (SenderChannel, ReceiverChannel) = mpsc::channel();
 
     let h = thread::spawn(move || {
-        let _tid = thread::current().id();
+        let tid = thread::current().id();
 
         let (_, mut rx) = match datalink::channel(&interface, Default::default()) {
             Ok(Channel::Ethernet(tx, rx)) => (tx, rx),
@@ -139,30 +142,30 @@ pub fn listen_for_arp( interface: NetworkInterface ) -> (JoinHandle<()>,  Receiv
         };
 
         //loop {
-            //match rx.next() {
-                while let Ok(data) = rx.next() {
-                    let ethernet_packet = EthernetPacket::new(data).unwrap();
-                    let ethernet_payload = ethernet_packet.payload();
-                    let arp_packet = ArpPacket::new(ethernet_payload).unwrap();
-                    let arp_reply_op = ArpOperation::new(2_u16);
+        //match rx.next() {
+            while let Ok(data) = rx.next() {
+                let ethernet_packet = EthernetPacket::new(data).unwrap();
+                let ethernet_payload = ethernet_packet.payload();
+                let arp_packet = ArpPacket::new(ethernet_payload).unwrap();
+                let arp_reply_op = ArpOperation::new(2_u16);
 
-                    if arp_packet.get_operation() == arp_reply_op {                    
-                        let result: (Ipv4Addr, MacAddr, Ipv4Addr, SystemTime) = (arp_packet.get_sender_proto_addr(), arp_packet.get_sender_hw_addr(), arp_packet.get_target_proto_addr(), SystemTime::now() ) ;
-                        trace!("{}\t{} {}", result.0, result.1, result.2 );
-                        match sender.send(result){  // send the result to the mpsc channel
-                          Ok(_r) => { 
-                                trace!("arp-packet sent OK to: {}",result.0);                                     
-                          },
-                          _e => { error!("Error sending message to: {}", result.0) }
-                        }                            
-                    }
+                if arp_packet.get_operation() == arp_reply_op {                    
+                    let result: (Ipv4Addr, MacAddr, Ipv4Addr, SystemTime) = (arp_packet.get_sender_proto_addr(), arp_packet.get_sender_hw_addr(), arp_packet.get_target_proto_addr(), SystemTime::now() ) ;
+                    trace!("{}\t{} {}", result.0, result.1, result.2 );
+                    match sender.send(result){  // send the result to the mpsc channel
+                        Ok(_r) => { 
+                            trace!("arp-packet sent OK to: {}",result.0);                                     
+                        },
+                        _e => { error!("Error sending message to: {}", result.0) }
+                    }                            
                 }
-              // , Err(e) => error!("An error occurred while reading packet: {:?}", e)
-            //}
+            }
+            // , Err(e) => error!("An error occurred while reading packet: {:?}", e)
         //}
-        println!("Listen exiting");
+        debug!("Listen exiting");
     });
-    println!("Listen thread spawned");
+    debug!("Arp listener thread spawned with thread_id: {:?} ",h.thread().id());
+
     return ( h, receiver);
 
 }

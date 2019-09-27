@@ -2,11 +2,8 @@ extern crate lib_arp;
 extern crate pnet;
 extern crate time;
 
-use pnet::datalink::NetworkInterface;
-use std::net::{ IpAddr, Ipv4Addr };
-use std::time::{ Duration, Instant };
 use lib_arp::*;
-use std::io::{self, Read};
+use std::io::{ Read };
 use time::{PreciseTime};
 
 fn main() {
@@ -30,7 +27,7 @@ fn main() {
 }
 
 fn dump_nodes(nodes: &std::collections::HashMap<String, ArpNode>){
-    for (k, n) in nodes {
+    for (_k, n) in nodes {
         println!("{:?}", n);
     }
 
