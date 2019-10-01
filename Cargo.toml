@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 pnet = "0.22.0"
 time = "0.1.42"
+users = "0.9.1"
 lib_arp = { path = "./lib_arp" }
 
 #reqwest = ["rustls-tls"]

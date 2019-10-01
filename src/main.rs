@@ -10,8 +10,14 @@ fn main() {
 
     println!("Fast Arp experiment");
     
+    is_user_sudo();
+
     let args: Vec<String> = std::env::args().collect();    
-    println!("{:?}", args);
+    if args.len() < 2 {
+        show_usage();
+        std::process::exit(1);
+    }
+
     let interface = &args[1];
     
     let start = PreciseTime::now();
@@ -39,6 +45,15 @@ fn readline() -> std::io::Result<()> {
     Ok(())
 }
 
+fn is_user_sudo(){
+    if users::get_effective_uid() != 0 {
+        println!("ERROR: Must run nemesis as root");
+        std::process::exit(1);
+    }
+}
 
-
+fn show_usage(){
+    println!("\nUsage:");
+    println!("sudo ./fastarp <interface_name>\n");
+}
 
