@@ -1,4 +1,3 @@
-extern crate env_logger;
 extern crate pnet;
 extern crate ipnetwork;
 extern crate chrono;
@@ -16,8 +15,18 @@ pub type ArpResult<T> = std::result::Result<T, ArpErrors>;
 
 #[derive(Debug, Fail)]
 pub enum ArpErrors{
-
     #[fail(display="ArpError: {}",_0)]
     ArpError(String),
 
 }
+
+// use std::convert::From;
+// use std::option::NoneError;
+
+// impl From<NoneError> for ArpErrors{
+//     fn from(e:NoneError) -> Self{
+
+//     }
+// }
+
+//std::option::NoneError

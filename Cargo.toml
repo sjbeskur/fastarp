@@ -12,6 +12,11 @@ time = "0.1.42"
 users = "0.9.1"
 lib_arp = { path = "./lib_arp" }
 
+
+log = "0.4.8"
+env_logger = "0.7.0"
+
+
 #reqwest = ["rustls-tls"]
 
 [workspace]

@@ -1,10 +1,12 @@
+
+#[macro_use] extern crate log;
+
 extern crate lib_arp;
 extern crate pnet;
 extern crate time;
 
 use lib_arp::*;
-use std::io::{ Read };
-use time::{PreciseTime};
+use time::PreciseTime;
 
 fn main() {
 
@@ -22,14 +24,15 @@ fn main() {
     
     let start = PreciseTime::now();
 
-    let node_map = lib_arp::scan_v4(interface);
-    
-    let end = PreciseTime::now();
-    let scan_time = start.to(end).num_milliseconds() as f64;
-
-    dump_nodes(&node_map);
-
-    println!("{count} nodes scanned in {time:.2}", time = scan_time / 1000.0, count = node_map.len());
+    match lib_arp::scan_v4(interface){
+        Ok(nodes) => {
+            let end = PreciseTime::now();
+            let scan_time = start.to(end).num_milliseconds() as f64;
+            dump_nodes(&nodes);
+            println!("{count} nodes scanned in {time:.2}", time = scan_time / 1000.0, count = nodes.len())
+        }
+        Err(e) => error!("Error:{}", e)
+    }
 }
 
 fn dump_nodes(nodes: &std::collections::HashMap<String, ArpNode>){
@@ -37,12 +40,6 @@ fn dump_nodes(nodes: &std::collections::HashMap<String, ArpNode>){
         println!("{:?}", n);
     }
 
-}
-
-fn readline() -> std::io::Result<()> {
-    let mut buffer = String::new();
-    std::io::stdin().read_to_string(&mut buffer)?;
-    Ok(())
 }
 
 fn is_user_sudo(){

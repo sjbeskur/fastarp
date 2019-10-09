@@ -7,8 +7,8 @@ homepage = "https://www.advanceddatamachines.com"
 description = "Daemon, designed to probe, collect and report various network and network device statistics"
 
 [dependencies]
-log = "0.4.8" 
-env_logger = "0.6.2"
+log = "0.4.8"
+
 
 failure = "0.1.5"
 serde = "1.0.101"
