@@ -10,9 +10,9 @@ description = "Daemon, designed to probe, collect and report various network and
 log = "0.4.8"
 
 
-failure = "0.1.5"
-serde = "1.0.101"
-serde_derive = "1.0.101"
-ipnetwork = "0.14.0" 
-pnet = "0.22.0"
-chrono = "0.4.9"
+failure = "0.1.7"
+serde = "1.0.106"
+serde_derive = "1.0.106"
+ipnetwork = "0.15.0" 
+pnet = "0.25.0"
+chrono = "0.4.11"
