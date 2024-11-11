@@ -8,11 +8,11 @@ description = "Daemon, designed to probe, collect and report various network and
 
 [dependencies]
 log = "0.4.8" 
-env_logger = "0.6.2"
+env_logger = "0.11.5"
 
 failure = "0.1.5"
 serde = "1.0.101"
 serde_derive = "1.0.101"
-ipnetwork = "0.14.0" 
-pnet = "0.22.0"
+ipnetwork = "0.20.0" 
+pnet = "0.35.0"
 chrono = "0.4.9"

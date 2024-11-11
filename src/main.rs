@@ -4,13 +4,13 @@ extern crate time;
 
 use lib_arp::*;
 use std::io::{ Read };
-use time::{PreciseTime};
+//use time::{PreciseTime};
 
 fn main() {
 
     println!("Fast Arp experiment");
     
-    is_user_sudo();
+    //is_user_sudo();
 
     let args: Vec<String> = std::env::args().collect();    
     if args.len() < 2 {
@@ -20,16 +20,16 @@ fn main() {
 
     let interface = &args[1];
     
-    let start = PreciseTime::now();
+    let start = std::time::Instant::now();
 
     let node_map = lib_arp::scan_v4(interface);
     
-    let end = PreciseTime::now();
-    let scan_time = start.to(end).num_milliseconds() as f64;
+    let end = std::time::Instant::now();
+    let scan_time = start.elapsed().as_millis();
 
     dump_nodes(&node_map);
 
-    println!("{count} nodes scanned in {time:.2}", time = scan_time / 1000.0, count = node_map.len());
+    println!("{count} nodes scanned in {time:.2}ms", time = scan_time, count = node_map.len());
 }
 
 fn dump_nodes(nodes: &std::collections::HashMap<String, ArpNode>){

@@ -1,4 +1,4 @@
-#[derive(Debug, Serialize, Clone, Default)]
+#[derive(Debug, /* Serialize,*/ Clone, Default)]
 pub struct ArpNode{
    pub mac_address:  String,
    pub ping_ms:      f32,

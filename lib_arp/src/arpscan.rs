@@ -6,6 +6,7 @@ use std::sync::mpsc::{ self, Sender, Receiver };
 use std::net::{ IpAddr, Ipv4Addr };
 
 use ipnetwork::*;
+use log::{debug, error, trace, warn};
 use pnet::datalink::{ self, Channel, NetworkInterface, MacAddr };
 use pnet::packet::{ Packet, MutablePacket };
 use pnet::packet::ethernet::{ MutableEthernetPacket, EtherTypes, EthernetPacket };
@@ -173,7 +174,7 @@ pub fn listen_for_arp( interface: NetworkInterface ) -> (JoinHandle<()>,  Receiv
 
 pub fn send_arp_packet( interface: NetworkInterface, source_ip: Ipv4Addr,  target_ip: Ipv4Addr) -> ArpResult<(Ipv4Addr, SystemTime)>{
 
-    let source_mac     = interface.mac_address();
+    let source_mac     = interface.mac.unwrap();
     let target_mac     = MacAddr::new(255,255,255, 255,255,255);
 
     trace!("sending arp packet to {} - {} ", target_ip.to_string(), source_mac);//chrono::Local::now());
