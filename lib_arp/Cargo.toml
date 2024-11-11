@@ -2,7 +2,7 @@
 name = "lib_arp"
 version = "0.1.1"  
 authors = ["rust-team <rust-lang-devs@advanceddatamachines.com>"]
-edition = "2018"
+edition = "2021"
 homepage = "https://www.advanceddatamachines.com"
 description = "Daemon, designed to probe, collect and report various network and network device statistics"
 
