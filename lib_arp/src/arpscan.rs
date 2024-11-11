@@ -12,27 +12,35 @@ use pnet::packet::{ Packet, MutablePacket };
 use pnet::packet::ethernet::{ MutableEthernetPacket, EtherTypes, EthernetPacket };
 use pnet::packet::arp::{ ArpHardwareTypes, ArpOperations, ArpOperation, ArpPacket, MutableArpPacket };
 use super::arpnode::{ArpNode};
-use super::ArpResult;
+
+use crate::{ArpResult, ArpErrors};
 
 type SenderChannel = Sender<(Ipv4Addr, MacAddr, Ipv4Addr, SystemTime)>;
 type ReceiverChannel = Receiver<(Ipv4Addr, MacAddr, Ipv4Addr, SystemTime)>;
 
 
-pub fn scan_v4(iface_name: &str) -> std::collections::HashMap<String, ArpNode>{
-    let ips = get_iface_ips(iface_name);
-    let iface = validate_interface(iface_name.to_string()).unwrap();
-    let source_network = iface.ips.iter().find(|x| x.is_ipv4()).unwrap();
-    let source_ip      = source_network.ip();
+pub fn scan_v4(iface_name: &str) -> ArpResult<std::collections::HashMap<String, ArpNode>>{
+    let ips = get_iface_ips(iface_name)?;
+    let iface = validate_interface(iface_name.to_string())?;
+    
+    let source_ip = 
+        if let Some(source_network) = iface.ips.iter().find(|x| x.is_ipv4()){
+            source_network.ip()
+        }else{
+            return Err(ArpErrors::ArpError("Unable to find ip!".into()));
+        };
 
+
+    //starts listener thread...
     let (_hdl, reciever) = listen_for_arp(iface.clone());
 
-    thread::sleep_ms(1000);
+    //break work by chunks
     let chunk_size = compute_chunk_size(ips.len());
     debug!("chunk_size = {}", chunk_size);
     let chunks: Vec<_> = ips.chunks(chunk_size).map(|c| c.to_owned()).collect();
 
     let mut handles = vec![];
-    
+
     let mut idx = 0;
     for list in chunks{
         let intf = iface.clone();
@@ -72,7 +80,7 @@ pub fn scan_v4(iface_name: &str) -> std::collections::HashMap<String, ArpNode>{
         nodes.insert(n.mac_address.clone(), n);
     }
 
-    nodes
+    Ok(nodes)
 }
 
 fn compute_chunk_size(list_size: usize) -> usize{
@@ -104,7 +112,7 @@ fn send_arp(iface: NetworkInterface,  source_ip: IpAddr, ip_list: &[Ipv4Addr] ) 
     for target_ip in ip_list.iter(){
         match source_ip{
             IpAddr::V4(source_v4) =>{
-                let r = match send_arp_packet(iface.clone(), source_v4, *target_ip){
+                match send_arp_packet(iface.clone(), source_v4, *target_ip){
                     Ok(it) => { timer_map.insert(it.0, it.1); },
                     Err(_) => {  /* do nothing*/  }
                 };
@@ -117,16 +125,17 @@ fn send_arp(iface: NetworkInterface,  source_ip: IpAddr, ip_list: &[Ipv4Addr] ) 
     return timer_map;
 }
 
-pub fn get_iface_ips(target_iface: &str) -> Vec<Ipv4Addr>{
-    let iface = validate_interface(target_iface.to_string()).unwrap();
-    let source_network = iface.ips.iter().find(|x| x.is_ipv4()).unwrap();
-    let mut ips_v4: Vec<Ipv4Addr> = Vec::new();
-    if let &IpNetwork::V4(network) = source_network{
-        for ip in network.iter(){
-            ips_v4.push(ip);
+pub fn get_iface_ips(target_iface: &str) -> ArpResult<Vec<Ipv4Addr>>{
+    let iface = validate_interface(target_iface.to_string())?;
+
+    if let Some(source_network) = iface.ips.iter().find(|x| x.is_ipv4()){
+        if let &IpNetwork::V4(network) = source_network{
+            return Ok(network.iter().collect::<Vec<Ipv4Addr>>());
         }
     }
-    ips_v4
+
+    Err(ArpErrors::ArpError(format!("Unable to find {} interface!", target_iface)))
+
 }
 
 pub fn listen_for_arp( interface: NetworkInterface ) -> (JoinHandle<()>,  ReceiverChannel) {
@@ -134,7 +143,7 @@ pub fn listen_for_arp( interface: NetworkInterface ) -> (JoinHandle<()>,  Receiv
     let (sender, receiver): (SenderChannel, ReceiverChannel) = mpsc::channel();
 
     let h = thread::spawn(move || {
-        let tid = thread::current().id();
+        //let tid = thread::current().id();
 
         let (_, mut rx) = match datalink::channel(&interface, Default::default()) {
             Ok(Channel::Ethernet(tx, rx)) => (tx, rx),
@@ -142,27 +151,23 @@ pub fn listen_for_arp( interface: NetworkInterface ) -> (JoinHandle<()>,  Receiv
             Err(e) => panic!("Error happened {}", e)
         };
 
-        //loop {
-        //match rx.next() {
-            while let Ok(data) = rx.next() {
-                let ethernet_packet = EthernetPacket::new(data).unwrap();
-                let ethernet_payload = ethernet_packet.payload();
-                let arp_packet = ArpPacket::new(ethernet_payload).unwrap();
-                let arp_reply_op = ArpOperation::new(2_u16);
+        while let Ok(data) = rx.next() {
+            let ethernet_packet = EthernetPacket::new(data).unwrap();
+            let ethernet_payload = ethernet_packet.payload();
+            let arp_packet = ArpPacket::new(ethernet_payload).unwrap();
+            let arp_reply_op = ArpOperation::new(2_u16);
 
-                if arp_packet.get_operation() == arp_reply_op {                    
-                    let result: (Ipv4Addr, MacAddr, Ipv4Addr, SystemTime) = (arp_packet.get_sender_proto_addr(), arp_packet.get_sender_hw_addr(), arp_packet.get_target_proto_addr(), SystemTime::now() ) ;
-                    trace!("{}\t{} {}", result.0, result.1, result.2 );
-                    match sender.send(result){  // send the result to the mpsc channel
-                        Ok(_r) => { 
-                            trace!("arp-packet sent OK to: {}",result.0);                                     
-                        },
-                        _e => { error!("Error sending message to: {}", result.0) }
-                    }                            
-                }
+            if arp_packet.get_operation() == arp_reply_op {                    
+                let result: (Ipv4Addr, MacAddr, Ipv4Addr, SystemTime) = (arp_packet.get_sender_proto_addr(), arp_packet.get_sender_hw_addr(), arp_packet.get_target_proto_addr(), SystemTime::now() ) ;
+                trace!("{}\t{} {}", result.0, result.1, result.2 );
+                match sender.send(result){  // send the result to the mpsc channel
+                    Ok(_r) => { 
+                        trace!("arp-packet sent OK to: {}",result.0);                                     
+                    },
+                    _e => { error!("Error sending message to: {}", result.0) }
+                }                            
             }
-            // , Err(e) => error!("An error occurred while reading packet: {:?}", e)
-        //}
+        }
         debug!("Listen exiting");
     });
     debug!("Arp listener thread spawned with thread_id: {:?} ",h.thread().id());
@@ -212,26 +217,26 @@ pub fn send_arp_packet( interface: NetworkInterface, source_ip: Ipv4Addr,  targe
     Ok(( target_ip, sent ))
 }
 
-pub fn validate_interface(target_iface: String) -> crate::ArpResult<NetworkInterface>{
+pub fn validate_interface(target_iface: String) -> ArpResult<NetworkInterface>{
     //let iface_match = | iface: &NetworkInterface | iface.name == target_iface ;
     let interfaces = datalink::interfaces();
     interfaces.into_iter()
             //.filter(iface_match)
             .find(| iface | iface.name == target_iface)
-            .ok_or_else( || crate::ArpErrors::ArpError(format!("Invalid Network Interface. No such device {}.",target_iface)))
+            .ok_or_else( || ArpErrors::ArpError(format!("Invalid Network Interface. No such device {}.",target_iface)))
             .and_then(|iface| validate_iface(iface))
     
 }
 
 
-pub fn validate_iface(target_iface: NetworkInterface) -> crate::ArpResult<NetworkInterface>{
+pub fn validate_iface(target_iface: NetworkInterface) -> ArpResult<NetworkInterface>{
 
     if target_iface.is_loopback(){
-        return Err(crate::ArpErrors::ArpError( format!("Invalid Network Interface. Target interface {} is loopback.",target_iface.name) ) );
+        return Err(ArpErrors::ArpError( format!("Invalid Network Interface. Target interface {} is loopback.",target_iface.name) ) );
     }
 
     if target_iface.ips.is_empty(){
-        return Err(crate::ArpErrors::ArpError( format!("Invalid Network Interface. Target interface {} has no associated network address.",target_iface)));
+        return Err(ArpErrors::ArpError( format!("Invalid Network Interface. Target interface {} has no associated network address.",target_iface)));
     }
     Ok(target_iface)
 }

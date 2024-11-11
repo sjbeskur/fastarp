@@ -216,7 +216,9 @@ dependencies = [
 name = "fastarp"
 version = "0.2.0"
 dependencies = [
+ "env_logger",
  "lib_arp",
+ "log",
  "pnet",
  "time",
  "users",

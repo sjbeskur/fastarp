@@ -1,3 +1,6 @@
+
+//#[macro_use] extern crate log;
+
 extern crate lib_arp;
 extern crate pnet;
 extern crate time;
@@ -22,7 +25,7 @@ fn main() {
     
     let start = std::time::Instant::now();
 
-    let node_map = lib_arp::scan_v4(interface);
+    let node_map = lib_arp::scan_v4(interface).unwrap();
     
     let end = std::time::Instant::now();
     let scan_time = start.elapsed().as_millis();
@@ -37,12 +40,6 @@ fn dump_nodes(nodes: &std::collections::HashMap<String, ArpNode>){
         println!("{:?}", n);
     }
 
-}
-
-fn readline() -> std::io::Result<()> {
-    let mut buffer = String::new();
-    std::io::stdin().read_to_string(&mut buffer)?;
-    Ok(())
 }
 
 fn is_user_sudo(){
