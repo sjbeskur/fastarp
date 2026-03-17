@@ -3,9 +3,14 @@ name = "fastarp"
 version = "0.2.0"
 authors = ["sjbeskur <sam.beskur@gmail.com>"]
 edition = "2024"
+description = "Fast ARP network scanner for local subnet host discovery"
+license = "MIT"
+repository = "https://github.com/sjbeskur/fastarp"
+keywords = ["arp", "network", "scanner"]
+categories = ["network-programming", "command-line-utilities"]
 
 [dependencies]
-lib_arp = { path = "../lib_arp" }
+lib_arp = { version = "0.1.1", path = "../lib_arp" }
 clap = { version = "4", features = ["derive"] }
 pnet = "0.35.0"
 log = "0.4.8"

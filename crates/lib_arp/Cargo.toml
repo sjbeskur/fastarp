@@ -4,6 +4,10 @@ version = "0.1.1"
 authors = ["sjbeskur <sam.beskur@gmail.com>"]
 edition = "2024"
 description = "Fast ARP scanning library for local subnet host discovery"
+license = "MIT"
+repository = "https://github.com/sjbeskur/fastarp"
+keywords = ["arp", "network", "scanner"]
+categories = ["network-programming"]
 
 [dependencies]
 log = "0.4.8"
