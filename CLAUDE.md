@@ -21,9 +21,9 @@ sudo cargo run --release -- <interface_name>
 
 This is a Cargo workspace with two members:
 
-- **`crates/fastarp`** (binary) — CLI entrypoint in `crates/fastarp/src/main.rs`. Parses the interface name argument, calls `lib_arp::scan_v4()`, and prints discovered nodes with timing.
+- **`crates/fastarp`** (binary) — CLI entrypoint in `crates/fastarp/src/main.rs`. Parses the interface name argument, calls `fastarp-core::scan_v4()`, and prints discovered nodes with timing.
 
-- **`crates/lib_arp`** (library) — Core scanning logic in `crates/lib_arp/src/`:
+- **`crates/fastarp-core`** (library) — Core scanning logic in `crates/fastarp-core/src/`:
   - **`arpscan.rs`** — Main pipeline: `scan_v4(iface_name)` resolves all IPv4 addresses in the subnet, spawns a listener thread to capture ARP replies via mpsc channel, divides IPs into chunks (`compute_chunk_size` uses logarithmic scaling), spawns worker threads to send ARP requests via pnet, then collects responses and calculates RTT.
   - **`arpnode.rs`** — `ArpNode` struct: mac_address, ipv4_address, ipv4_target, ping_ms.
   - **`lib.rs`** — Re-exports public API and defines `ArpResult<T>` / `ArpErrors`.

@@ -31,8 +31,8 @@ run iface:
 
 # Publish lib_arp then fastarp to crates.io
 release:
-    cargo release --package fastarp --execute
+    cargo release --workspace --execute
 
 # Dry-run release (no publish, no git push)
-release-dry:
-    cargo release --package fastarp
+dryrun:
+    cargo release --workspace --dry-run

@@ -10,7 +10,7 @@ keywords = ["arp", "network", "scanner"]
 categories = ["network-programming", "command-line-utilities"]
 
 [dependencies]
-lib_arp = { version = "0.1.1", path = "../lib_arp" }
+fastarp-core = { version = "0.1.1", path = "../fastarp-core" }
 clap = { version = "4", features = ["derive"] }
 pnet = "0.35.0"
 log = "0.4.8"

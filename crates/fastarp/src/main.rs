@@ -24,7 +24,7 @@ fn main() {
 
     let start = std::time::Instant::now();
 
-    let node_map = match lib_arp::scan_v4(&interface) {
+    let node_map = match fastarp_core::scan_v4(&interface) {
         Ok(nodes) => nodes,
         Err(e) => {
             eprintln!("Error: {e}");

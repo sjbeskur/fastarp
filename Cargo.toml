@@ -1,6 +1,6 @@
 [workspace]
 members = [
     "crates/fastarp",
-    "crates/lib_arp",
+    "crates/fastarp-core",
 ]
 resolver = "3"
