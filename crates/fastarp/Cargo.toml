@@ -1,0 +1,12 @@
+[package]
+name = "fastarp"
+version = "0.2.0"
+authors = ["sjbeskur <sam.beskur@gmail.com>"]
+edition = "2024"
+
+[dependencies]
+lib_arp = { path = "../lib_arp" }
+clap = { version = "4", features = ["derive"] }
+pnet = "0.35.0"
+log = "0.4.8"
+env_logger = "0.11"
