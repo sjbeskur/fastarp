@@ -10,15 +10,25 @@ cargo install fastarp
 
 ## Usage
 
-```bash
-# List available network interfaces
-sudo fastarp
+Root/sudo is required for raw socket access. Since `sudo` resets your `PATH`, use one of these approaches:
 
-# Scan a specific interface
+```bash
+# Use the full path to the binary
+sudo ~/.cargo/bin/fastarp eth0
+
+# Or preserve your PATH
+sudo env "PATH=$PATH" fastarp eth0
+
+# Or copy to a system-wide location (one-time setup)
+sudo cp ~/.cargo/bin/fastarp /usr/local/bin/
 sudo fastarp eth0
 ```
 
-Root/sudo is required for raw socket access.
+Run without arguments to list available network interfaces:
+
+```bash
+sudo fastarp
+```
 
 ### Example output
 
