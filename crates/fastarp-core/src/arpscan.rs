@@ -13,13 +13,17 @@ use pnet::packet::ethernet::{MutableEthernetPacket, EtherTypes, EthernetPacket};
 use pnet::packet::arp::{ArpHardwareTypes, ArpOperations, ArpOperation, ArpPacket, MutableArpPacket};
 use super::arpnode::ArpNode;
 
-use crate::{ArpResult, ArpErrors};
+use crate::{ArpResult, ArpErrors, ScanResult};
 
 type SenderChannel = Sender<(Ipv4Addr, MacAddr, Ipv4Addr, SystemTime)>;
 type ReceiverChannel = Receiver<(Ipv4Addr, MacAddr, Ipv4Addr, SystemTime)>;
 
 
-pub fn scan_v4(iface_name: &str) -> ArpResult<HashMap<String, ArpNode>> {
+pub fn scan_v4(iface_name: &str) -> ArpResult<ScanResult> {
+    scan_v4_with_timeout(iface_name, 500)
+}
+
+pub fn scan_v4_with_timeout(iface_name: &str, timeout_ms: u64) -> ArpResult<ScanResult> {
     let iface = validate_interface(iface_name.to_string())?;
 
     let source_ip =
@@ -29,10 +33,11 @@ pub fn scan_v4(iface_name: &str) -> ArpResult<HashMap<String, ArpNode>> {
             return Err(ArpErrors::ArpError("Unable to find ip!".into()));
         };
 
-    let ips = match iface.ips.iter().find(|x| x.is_ipv4()) {
-        Some(&IpNetwork::V4(network)) => network.iter().collect::<Vec<Ipv4Addr>>(),
+    let (ips, subnet_str) = match iface.ips.iter().find(|x| x.is_ipv4()) {
+        Some(&IpNetwork::V4(network)) => (network.iter().collect::<Vec<Ipv4Addr>>(), network.to_string()),
         _ => return Err(ArpErrors::ArpError(format!("Unable to find IPv4 network for {}!", iface_name))),
     };
+    let total_ips = ips.len();
 
     // Start listener thread
     let (_hdl, receiver) = listen_for_arp(iface.clone());
@@ -59,7 +64,8 @@ pub fn scan_v4(iface_name: &str) -> ArpResult<HashMap<String, ArpNode>> {
     }
 
     // Wait for remaining ARP replies to arrive
-    thread::sleep(std::time::Duration::from_millis(500));
+    debug!("waiting {}ms for ARP replies ({} IPs)", timeout_ms, total_ips);
+    thread::sleep(std::time::Duration::from_millis(timeout_ms));
 
     let mut nodes = HashMap::new();
     while let Ok(arp) = receiver.try_recv() {
@@ -88,7 +94,11 @@ pub fn scan_v4(iface_name: &str) -> ArpResult<HashMap<String, ArpNode>> {
         nodes.insert(n.mac_address.clone(), n);
     }
 
-    Ok(nodes)
+    Ok(ScanResult {
+        nodes,
+        total_ips,
+        subnet: subnet_str,
+    })
 }
 
 pub(crate) fn compute_chunk_size(list_size: usize) -> usize {

@@ -7,6 +7,10 @@ use pnet::datalink;
 struct Cli {
     /// Network interface to scan (e.g. eth0, wlan0). Omit to list available interfaces.
     interface: Option<String>,
+
+    /// Timeout in milliseconds to wait for ARP replies (default: 500)
+    #[arg(short, long, default_value_t = 500)]
+    timeout: u64,
 }
 
 fn main() {
@@ -24,8 +28,8 @@ fn main() {
 
     let start = std::time::Instant::now();
 
-    let node_map = match fastarp_core::scan_v4(&interface) {
-        Ok(nodes) => nodes,
+    let result = match fastarp_core::scan_v4_with_timeout(&interface, cli.timeout) {
+        Ok(r) => r,
         Err(e) => {
             eprintln!("Error: {e}");
             std::process::exit(1);
@@ -34,9 +38,15 @@ fn main() {
 
     let scan_time = start.elapsed().as_millis();
 
-    for (_k, n) in &node_map {
+    for (_k, n) in &result.nodes {
         println!("{n}");
     }
 
-    println!("{count} nodes scanned in {time}ms", time = scan_time, count = node_map.len());
+    println!(
+        "{found} hosts found out of {total} IPs on {subnet} in {time}ms",
+        found = result.nodes.len(),
+        total = result.total_ips,
+        subnet = result.subnet,
+        time = scan_time,
+    );
 }
