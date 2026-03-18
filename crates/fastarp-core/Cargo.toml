@@ -1,6 +1,6 @@
 [package]
 name = "fastarp-core"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["sjbeskur <sam.beskur@gmail.com>"]
 edition = "2024"
 description = "Fast ARP scanning library for local subnet host discovery"
